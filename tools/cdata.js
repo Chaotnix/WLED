@@ -76,7 +76,7 @@ function writeHtmlGzipped(sourceFile, resultFile) {
     }
 
     html = adoptVersionAndRepo(html);
-    zlib.gzip(html, function (error, result) {
+    zlib.gzip(html, { level: zlib.constants.Z_BEST_COMPRESSION }, function (error, result) {
       if (error) {
         console.warn(error);
         throw error;
@@ -88,7 +88,7 @@ function writeHtmlGzipped(sourceFile, resultFile) {
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  *
- * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
 
@@ -105,7 +105,7 @@ ${array}
 }
 
 const CleanCSS = require("clean-css");
-const MinifyHTML = require("html-minifier").minify;
+const MinifyHTML = require("html-minifier-terser").minify;
 
 function filter(str, type) {
   str = adoptVersionAndRepo(str);
@@ -119,7 +119,7 @@ function filter(str, type) {
       collapseWhitespace: true,
       maxLineLength: 80,
       minifyCSS: true,
-      minifyJS: true,
+      minifyJS: true, 
       continueOnParseError: false,
       removeComments: true,
     });
@@ -163,7 +163,7 @@ function writeChunks(srcDir, specs, resultFile) {
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
- * Instead, see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Instead, see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
 `;
@@ -226,6 +226,22 @@ writeChunks(
     {
       file: "settings_leds.htm",
       name: "PAGE_settings_leds",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(/\<link rel="stylesheet".*\>/gms, "")
+          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          ),
+    },
+    {
+      file: "settings_sound.htm",
+      name: "PAGE_settings_sound",
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",
@@ -381,6 +397,14 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
     {
       file: "liveview.htm",
       name: "PAGE_liveview",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+    },
+    {
+      file: "404.htm",
+      name: "PAGE_404",
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",
